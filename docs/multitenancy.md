@@ -1,5 +1,9 @@
 # Multitenancy
 
-`public.tenants` maps an opaque tenant UUID to a generated schema name. Provision names server side from random UUID bytes (`tenant_` plus 32 lowercase hexadecimal digits), never from user supplied slugs. Create schemas and apply versioned migrations only from a privileged provisioning/migration process. Runtime roles should have access only to approved schemas where possible.
+`public.tenants` maps an opaque UUID to a generated schema name: `tenant_` plus the UUID's 32 lowercase hexadecimal digits. Provisioning accepts only a server-minted internal UUID; clients never provide a schema name.
 
-After authentication, resolve the active membership from the global store. Authorization must verify that membership on every request and produce a `TenantContext`; request tenant IDs are only selectors that must be checked against that membership. The ingredient route intentionally does not write until this resolver exists. Never use client schema names. Schema switching uses validated identifiers and a transaction-local search path; all row values are bound parameters.
+After cookie authentication, the resolver reads the selected UUID from `x-tenant-id` (or `tenantId` on collection GETs), checks membership and role against `public` on every request, and verifies the canonical schema mapping. A tenant ID is only a selector; membership is the authorization proof. The `pg` tenant pool re-derives the schema from the UUID and uses a validated identifier plus transaction-local `search_path`. All SQL values are bound parameters.
+
+`POST /api/v1/tenants` authenticates the caller, requires an owner-scoped idempotency key, derives a stable internal UUID from owner and key, then invokes the server-only provisioning service. It does not accept a tenant ID or schema name. `migrateTenantSchema(tenantId)` remains an operator-controlled deployment operation that verifies the tenant row before applying only that tenant's pending migrations.
+
+The privileged provisioning connection uses `TENANT_PROVISIONING_DATABASE_URL`, falling back to `DIRECT_URL`. Give it schema creation rights; keep the runtime pool least-privileged. Credentials stay server-side and out of `NEXT_PUBLIC_*` variables.

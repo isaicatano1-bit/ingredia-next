@@ -2,5 +2,8 @@ import { z } from "zod";
 
 export const createIngredientSchema = z.object({
   name: z.string().trim().min(1).max(120),
-  unit: z.string().trim().min(1).max(24),
-});
+  purchaseUnitId: z.string().uuid(),
+}).strict();
+
+export const patchIngredientSchema = createIngredientSchema.partial().refine((value) => Object.keys(value).length > 0);
+export const ingredientIdSchema = z.string().uuid();

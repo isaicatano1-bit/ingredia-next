@@ -3,14 +3,16 @@ import { createIngredientSchema } from "../../src/features/ingredients/schemas/i
 
 describe("createIngredientSchema", () => {
   it("trims and accepts valid values", () => {
-    expect(createIngredientSchema.parse({ name: " Rice ", unit: " kg " })).toEqual({
+    const purchaseUnitId = "7f71764b-96e9-4f76-a1a0-f5a57a30c3ef";
+    expect(createIngredientSchema.parse({ name: " Rice ", purchaseUnitId })).toEqual({
       name: "Rice",
-      unit: "kg",
+      purchaseUnitId,
     });
   });
 
   it("rejects empty or oversized values", () => {
-    expect(createIngredientSchema.safeParse({ name: " ", unit: "kg" }).success).toBe(false);
-    expect(createIngredientSchema.safeParse({ name: "x".repeat(121), unit: "kg" }).success).toBe(false);
+    const purchaseUnitId = "7f71764b-96e9-4f76-a1a0-f5a57a30c3ef";
+    expect(createIngredientSchema.safeParse({ name: " ", purchaseUnitId }).success).toBe(false);
+    expect(createIngredientSchema.safeParse({ name: "x".repeat(121), purchaseUnitId }).success).toBe(false);
   });
 });

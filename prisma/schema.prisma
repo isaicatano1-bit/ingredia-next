@@ -3,44 +3,57 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
-  schemas  = ["public"]
+  schemas   = ["public"]
+}
+
+enum MembershipRole {
+  OWNER
+  ADMIN
+  MEMBER
+
+  @@schema("public")
 }
 
 model User {
-  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email       String       @unique
-  passwordHash String      @map("password_hash")
-  memberships Membership[]
-  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  id                   String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email                String                      @unique
+  passwordHash         String                      @map("password_hash")
+  memberships          Membership[]
+  provisioningRequests TenantProvisioningRequest[]
+  createdAt            DateTime                    @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime                    @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   @@map("users")
   @@schema("public")
 }
 
 model Tenant {
-  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name        String
-  schemaName  String       @unique @map("schema_name")
-  memberships Membership[]
-  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  id                  String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                String
+  schemaName          String                     @unique @map("schema_name")
+  memberships         Membership[]
+  idempotencyRecords  IdempotencyRecord[]
+  provisioningRequest TenantProvisioningRequest?
+  createdAt           DateTime                   @default(now()) @map("created_at") @db.Timestamptz(6)
 
   @@map("tenants")
   @@schema("public")
 }
 
 model Membership {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId    String   @map("user_id") @db.Uuid
-  tenantId  String   @map("tenant_id") @db.Uuid
-  role      String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  id        String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String         @map("user_id") @db.Uuid
+  tenantId  String         @map("tenant_id") @db.Uuid
+  role      MembershipRole
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant    Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
 
   @@unique([userId, tenantId])
+  @@index([tenantId])
   @@map("memberships")
   @@schema("public")
 }
@@ -55,9 +68,36 @@ model IdempotencyRecord {
   responseBody   Json?    @map("response_body")
   expiresAt      DateTime @map("expires_at") @db.Timestamptz(6)
   createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
 
   @@unique([tenantId, operation, key], map: "idempotency_records_scope_key")
   @@index([expiresAt])
+  @@index([tenantId])
   @@map("idempotency_records")
+  @@schema("public")
+}
+
+model TenantProvisioningRequest {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ownerUserId String   @map("owner_user_id") @db.Uuid
+  key         String
+  requestHash String   @map("request_hash")
+  tenantId    String   @unique @map("tenant_id") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  owner       User     @relation(fields: [ownerUserId], references: [id], onDelete: Cascade)
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@unique([ownerUserId, key], map: "tenant_provisioning_requests_owner_key")
+  @@map("tenant_provisioning_requests")
+  @@schema("public")
+}
+
+model RateLimitBucket {
+  bucketKey       String   @id @map("bucket_key")
+  windowStartedAt DateTime @map("window_started_at") @db.Timestamptz(6)
+  hits            Int
+
+  @@index([windowStartedAt])
+  @@map("rate_limit_buckets")
   @@schema("public")
 }

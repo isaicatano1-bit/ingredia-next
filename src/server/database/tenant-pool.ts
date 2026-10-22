@@ -1,7 +1,7 @@
 import "server-only";
 import { Pool, type PoolClient } from "pg";
 import { env } from "@/server/config/env";
-import { assertTenantSchema, type TenantContext } from "@/server/tenancy/tenant-context";
+import { assertTenantSchema, schemaForTenantId, type TenantContext } from "@/server/tenancy/tenant-context";
 
 let pool: Pool | undefined;
 
@@ -16,6 +16,7 @@ export async function withTenantClient<T>(
   operation: (client: PoolClient) => Promise<T>,
 ): Promise<T> {
   const schema = assertTenantSchema(tenant.schemaName);
+  if (schemaForTenantId(tenant.tenantId) !== schema) throw new Error("Tenant schema does not match its internal tenant identifier");
   const client = await getPool().connect();
   try {
     await client.query("BEGIN");

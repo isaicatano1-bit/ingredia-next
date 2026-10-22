@@ -1,0 +1,63 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+  schemas  = ["public"]
+}
+
+model User {
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email       String       @unique
+  passwordHash String      @map("password_hash")
+  memberships Membership[]
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("users")
+  @@schema("public")
+}
+
+model Tenant {
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String
+  schemaName  String       @unique @map("schema_name")
+  memberships Membership[]
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("tenants")
+  @@schema("public")
+}
+
+model Membership {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  role      String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@unique([userId, tenantId])
+  @@map("memberships")
+  @@schema("public")
+}
+
+model IdempotencyRecord {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tenantId       String   @map("tenant_id") @db.Uuid
+  operation      String
+  key            String
+  requestHash    String   @map("request_hash")
+  responseStatus Int?     @map("response_status")
+  responseBody   Json?    @map("response_body")
+  expiresAt      DateTime @map("expires_at") @db.Timestamptz(6)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@unique([tenantId, operation, key], map: "idempotency_records_scope_key")
+  @@index([expiresAt])
+  @@map("idempotency_records")
+  @@schema("public")
+}

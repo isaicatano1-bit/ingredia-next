@@ -1,36 +1,36 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Ingredia
 
-## Getting Started
+Ingredia is a multitenant restaurant management SaaS built as a feature first modular monolith with Next.js App Router and TypeScript.
 
-First, run the development server:
+## Local development
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+Requirements: Node.js 22+, npm, and Docker Compose.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+1. Copy `.env.example` to `.env.local` and replace `JWT_SECRET` with a random secret.
+2. Start local services with `docker compose up -d`.
+3. Run `npm install`, `npm run db:generate`, and `npm run db:migrate`.
+4. Start Next.js with `npm run dev`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+`DATABASE_URL` and `DIRECT_URL` should point at the local database for development. `DATABASE_URL` is used by the application and `DIRECT_URL` by Prisma migrations. Do not use a `NEXT_PUBLIC_` prefix for secrets. Supabase deployments should use the appropriate pooled URL for runtime and a direct URL for migrations.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Commands
 
-## Learn More
+- `npm run lint` — ESLint
+- `npm test` — Vitest unit tests
+- `npm run build` — production build
+- `npm run db:generate` — generate Prisma client
+- `npm run db:migrate` — apply global Prisma migrations
 
-To learn more about Next.js, take a look at the following resources:
+Tenant SQL migrations are separate from Prisma migrations and currently require a privileged provisioning runner; there is no automatic tenant provisioning yet. Ingredient writes remain unavailable until authentication and authorized tenant resolution are implemented.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Project map
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- `src/app` — App Router pages, layouts, and versioned route handlers
+- `src/features` — client safe feature contracts and validation
+- `src/server` — server only services, repositories, database, and security
+- `prisma` — shared schema and global migrations
+- `prisma/tenant-migrations` — ordered tenant schema migrations
+- `tests` — unit, integration, end to end, and security tests
+- `docs` — architecture and operational decisions
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Read [architecture](docs/architecture.md), [database](docs/database.md), and [multitenancy](docs/multitenancy.md) before adding a feature. Security work still required is listed in the docs and implementation plan.

@@ -1,9 +1,9 @@
 import { z } from "zod";
-import { createSupplierSchema } from "@/features/suppliers/schemas/supplier";
+import { createSupplierSchema } from "@/server/features/suppliers/schemas/supplier";
 import { failure } from "@/server/api/responses/json";
 import { resolveTenant } from "@/server/auth/authorization";
 import { assertSameOrigin } from "@/server/auth/session";
-import { createSupplier, listSuppliers } from "@/server/features/suppliers/supplier-repository";
+import { createSupplier, listSuppliers } from "@/server/features/suppliers/supplier-service";
 import { enforceRateLimit } from "@/server/security/rate-limit";
 const querySchema = z.object({ page:z.coerce.number().int().min(1).default(1),limit:z.coerce.number().int().min(1).max(100).default(25),search:z.string().trim().max(120).optional() });
 

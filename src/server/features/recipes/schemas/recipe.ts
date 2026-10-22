@@ -1,3 +1,4 @@
+import "server-only";
 import { z } from "zod";
 export const recipeInputSchema = z.object({
   name:z.string().trim().min(1).max(160), description:z.string().trim().max(2000).optional(),

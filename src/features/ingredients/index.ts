@@ -1,2 +1,1 @@
-export type { Ingredient, CreateIngredientInput } from "./interfaces/ingredient";
-export { createIngredientSchema } from "./schemas/ingredient";
+export type { Ingredient, CreateIngredientInput } from "./types/ingredient";

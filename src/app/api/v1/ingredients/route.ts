@@ -1,9 +1,9 @@
 import { z } from "zod";
-import { createIngredientSchema } from "@/features/ingredients/schemas/ingredient";
+import { createIngredientSchema } from "@/server/features/ingredients/schemas/ingredient";
 import { failure } from "@/server/api/responses/json";
 import { resolveTenant } from "@/server/auth/authorization";
 import { assertSameOrigin } from "@/server/auth/session";
-import { createIngredient, listIngredients } from "@/server/features/ingredients/ingredient-repository";
+import { createIngredient, listIngredients } from "@/server/features/ingredients/ingredient-service";
 import { enforceRateLimit } from "@/server/security/rate-limit";
 
 const querySchema = z.object({ page: z.coerce.number().int().min(1).default(1), limit: z.coerce.number().int().min(1).max(100).default(25), search: z.string().trim().max(120).optional() });

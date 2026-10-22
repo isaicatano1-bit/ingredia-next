@@ -180,8 +180,16 @@ describe.skipIf(!enabled)("tenant database migrations (isolated local *_test dat
       `INSERT INTO ${schema}.supplier_ingredients (supplier_id, ingredient_id, last_known_unit_price, currency_code) VALUES ($1, $2, 4.50, 'USD')`,
       [supplier.rows[0].id, ingredient.rows[0].id],
     );
+    await client.query(
+      `INSERT INTO ${schema}.supplier_ingredients (supplier_id, ingredient_id, purchase_unit_id) VALUES ($1, $2, $3)`,
+      [supplier.rows[0].id, ingredient.rows[0].id, unit.rows[0].id],
+    );
+    await expect(client.query(
+      `INSERT INTO ${schema}.supplier_ingredients (supplier_id, ingredient_id, purchase_unit_id) VALUES ($1, $2, $3)`,
+      [supplier.rows[0].id, ingredient.rows[0].id, unit.rows[0].id],
+    )).rejects.toMatchObject({ code: "23505" });
     const purchase = await client.query<{ id: string }>(
-      `INSERT INTO ${schema}.purchases (supplier_id, purchase_date, currency_code, status) VALUES ($1, CURRENT_TIMESTAMP, 'USD', 'CONFIRMED') RETURNING id`,
+      `INSERT INTO ${schema}.purchases (supplier_id, purchase_date, currency_code) VALUES ($1, CURRENT_TIMESTAMP, 'USD') RETURNING id`,
       [supplier.rows[0].id],
     );
     const line = await client.query<{ id: string; line_total: string }>(
@@ -189,6 +197,11 @@ describe.skipIf(!enabled)("tenant database migrations (isolated local *_test dat
       [purchase.rows[0].id, ingredient.rows[0].id, unit.rows[0].id],
     );
     expect(line.rows[0].line_total).toBe("6.5000");
+    await client.query(`UPDATE ${schema}.purchases SET status = 'CONFIRMED' WHERE id = $1`, [purchase.rows[0].id]);
+    await expect(client.query(`UPDATE ${schema}.purchase_lines SET unit_price = 8 WHERE id = $1`, [line.rows[0].id]))
+      .rejects.toMatchObject({ code: "23514" });
+    await expect(client.query(`UPDATE ${schema}.purchases SET invoice_number = 'changed' WHERE id = $1`, [purchase.rows[0].id]))
+      .rejects.toMatchObject({ code: "23514" });
     await client.query(
       `UPDATE ${schema}.supplier_ingredients SET last_known_unit_price = 9.99 WHERE supplier_id = $1 AND ingredient_id = $2`,
       [supplier.rows[0].id, ingredient.rows[0].id],

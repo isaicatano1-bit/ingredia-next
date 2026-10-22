@@ -1,10 +1,10 @@
 import { z } from "zod";
-import { patchSupplierSchema } from "@/features/suppliers/schemas/supplier";
+import { patchSupplierSchema } from "@/server/features/suppliers/schemas/supplier";
 import { AppError } from "@/server/api/errors/app-error";
 import { failure, success } from "@/server/api/responses/json";
 import { resolveTenant } from "@/server/auth/authorization";
 import { assertSameOrigin } from "@/server/auth/session";
-import { archiveSupplier, getSupplier, updateSupplier } from "@/server/features/suppliers/supplier-repository";
+import { archiveSupplier, getSupplier, updateSupplier } from "@/server/features/suppliers/supplier-service";
 type Context={params:Promise<{id:string}>};
 async function id(context:Context){const result=z.string().uuid().safeParse((await context.params).id);if(!result.success)throw new AppError("Invalid supplier ID.",400,"INVALID_ID");return result.data;}
 export async function GET(request:Request,context:Context){try{const {tenant}=await resolveTenant(request);return success(await getSupplier(tenant,await id(context)));}catch(error){return failure(error);}}

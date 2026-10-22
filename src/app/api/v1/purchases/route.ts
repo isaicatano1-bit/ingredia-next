@@ -1,0 +1,10 @@
+import { z } from "zod";
+import { purchaseDraftSchema } from "@/server/features/purchases/schemas/purchase";
+import { failure } from "@/server/api/responses/json";
+import { resolveTenant } from "@/server/auth/authorization";
+import { assertSameOrigin } from "@/server/auth/session";
+import { createPurchase,listPurchases } from "@/server/features/purchases/purchase-service";
+import { enforceRateLimit } from "@/server/security/rate-limit";
+const querySchema=z.object({page:z.coerce.number().int().min(1).default(1),limit:z.coerce.number().int().min(1).max(100).default(25),status:z.enum(["DRAFT","CONFIRMED","CANCELLED"]).optional()});
+export async function GET(request:Request){try{const {tenant}=await resolveTenant(request);const q=querySchema.safeParse(Object.fromEntries(new URL(request.url).searchParams));if(!q.success)return Response.json({error:{code:"VALIDATION_ERROR",message:"Invalid pagination or status filter."}},{status:400});const {page,limit,status}=q.data;const result=await listPurchases(tenant,{limit,offset:(page-1)*limit,status});return Response.json({data:result.items,meta:{page,limit,total:result.total}});}catch(e){return failure(e);}}
+export async function POST(request:Request){try{assertSameOrigin(request);const {user,tenant}=await resolveTenant(request,["OWNER","ADMIN"]);await enforceRateLimit("purchases.create",`${tenant.tenantId}:${user.id}`,15);const key=request.headers.get("idempotency-key")?.trim();if(!key||key.length>200)return Response.json({error:{code:"IDEMPOTENCY_KEY_REQUIRED",message:"A valid Idempotency-Key header is required."}},{status:400});const p=purchaseDraftSchema.safeParse(await request.json());if(!p.success)return Response.json({error:{code:"VALIDATION_ERROR",message:"Invalid purchase data.",details:p.error.issues}},{status:400});const result=await createPurchase(tenant,p.data,key);return Response.json({data:result.purchase},{status:result.status,headers:result.replayed?{"Idempotency-Replayed":"true"}:{}});}catch(e){return failure(e);}}

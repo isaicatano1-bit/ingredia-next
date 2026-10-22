@@ -2,7 +2,7 @@ import "server-only";
 import { prisma } from "@/server/database/prisma";
 import { AppError } from "@/server/api/errors/app-error";
 import { hashPassword, verifyPassword } from "@/server/security/password";
-import type { Credentials } from "@/features/auth/auth.schemas";
+import type { Credentials } from "@/server/auth/schemas/auth";
 
 export async function register(credentials: Credentials) {
   const passwordHash = await hashPassword(credentials.password);

@@ -1,9 +1,9 @@
-import { ingredientIdSchema, patchIngredientSchema } from "@/features/ingredients/schemas/ingredient";
+import { ingredientIdSchema, patchIngredientSchema } from "@/server/features/ingredients/schemas/ingredient";
 import { AppError } from "@/server/api/errors/app-error";
 import { failure, success } from "@/server/api/responses/json";
 import { resolveTenant } from "@/server/auth/authorization";
 import { assertSameOrigin } from "@/server/auth/session";
-import { archiveIngredient, getIngredient, updateIngredient } from "@/server/features/ingredients/ingredient-repository";
+import { archiveIngredient, getIngredient, updateIngredient } from "@/server/features/ingredients/ingredient-service";
 
 type Context = { params: Promise<{ id: string }> };
 async function readId(context: Context): Promise<string> {

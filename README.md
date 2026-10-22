@@ -69,6 +69,8 @@ Implemented endpoints:
 | GET | `/api/v1/auth/me` | Safe profile and memberships |
 | GET, POST | `/api/v1/tenants` | List memberships / provision a restaurant tenant |
 | POST | `/api/v1/tenants/switch` | Verify membership for selected tenant |
+| GET, POST | `/api/v1/units` | List / create tenant measurement units |
+| GET, PATCH, DELETE | `/api/v1/units/[id]` | Read, rename, or delete an unreferenced unit |
 | GET, POST | `/api/v1/ingredients` | Search/page ingredients / idempotent creation |
 | GET, PATCH, DELETE | `/api/v1/ingredients/[id]` | Read/update/archive |
 | GET, POST | `/api/v1/suppliers` | Search/page suppliers / idempotent creation |
@@ -89,7 +91,7 @@ Content-Type: application/json
 {"name":"Rice","purchaseUnitId":"<unit UUID from this tenant>"}
 ```
 
-Write requests require a same-origin `Origin`; use `APP_BASE_URL` in production. Browser code should keep the JWT only in the HttpOnly cookie and send credentials normally; do not read or return the JWT. Access tokens last one hour and are not revocable server-side before expiry; logout clears the browser cookie. There is no refresh-token flow. Passwords use bcryptjs with work factor 12; inputs are capped at bcrypt's 72 UTF-8 byte limit.
+Write requests require a same-origin `Origin`; use an HTTPS `APP_BASE_URL` in production. Browser code should keep the JWT only in the HttpOnly cookie and send credentials normally; do not read or return the JWT. Access tokens last one hour; logout revokes the token ID in PostgreSQL and clears the cookie. There is no refresh-token flow. Passwords use bcryptjs with work factor 12; inputs are capped at bcrypt's 72 UTF-8 byte limit.
 
 `OWNER` and `ADMIN` can create, update, or archive business records; any authenticated account can create a tenant and becomes its owner. All tenant members can read their tenant data. DELETE endpoints archive records so historical purchases and recipes remain referentially safe. Recipe quantities and units are validated, but cost computation is intentionally not exposed: conversion factors and yield costing are not implemented, so returning a cost would be misleading.
 
@@ -97,7 +99,7 @@ Login/register/tenant creation and create-resource endpoints use PostgreSQL fixe
 
 For local setup, configure `DATABASE_URL`, `DIRECT_URL`, `TENANT_PROVISIONING_DATABASE_URL`, `JWT_SECRET` (at least 32 random characters), and `APP_BASE_URL`; then run `npm run db:generate` and the reviewed `npm run db:migrate`. The latter is `prisma migrate deploy`; it applies all pending shared migrations, including the rate-limit table. Tenant schemas are created only when `POST /api/v1/tenants` is called and use the SQL migration runner; existing schemas require an explicit trusted `migrateTenantSchema(tenantId)` invocation during an operator-controlled deployment. Do not put database or signing secrets in `NEXT_PUBLIC_*` variables.
 
-The API has unit coverage for request schemas, tenant identifier validation, and unauthenticated access. PostgreSQL integration tests remain opt-in and are skipped unless pointed at an isolated `_test` database. This implementation does not yet have end-to-end tests against a live disposable PostgreSQL database, session revocation, conversion tables, recipe cost calculations, or a dedicated external security review.
+The API has unit coverage for request schemas, tenant identifier validation, session token revocation behavior (with mocked persistence), password hashing, and unauthenticated access. PostgreSQL integration tests remain opt-in and are skipped unless pointed at an isolated `_test` database. End-to-end auth/CRUD tests against a live disposable PostgreSQL database, conversion tables, recipe cost calculations, and a dedicated external security review remain outstanding.
 
 ## Project map
 

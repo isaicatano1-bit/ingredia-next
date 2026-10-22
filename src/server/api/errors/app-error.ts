@@ -1,3 +1,4 @@
+import "server-only";
 export class AppError extends Error {
   constructor(
     message: string,

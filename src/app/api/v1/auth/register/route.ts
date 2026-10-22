@@ -1,4 +1,4 @@
-import { credentialsSchema } from "@/features/auth/auth.schemas";
+import { credentialsSchema } from "@/server/auth/schemas/auth";
 import { failure } from "@/server/api/responses/json";
 import { register } from "@/server/auth/auth-service";
 import { issueSession, sessionCookie } from "@/server/auth/session";

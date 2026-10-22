@@ -1,3 +1,4 @@
+import "server-only";
 import { AppError } from "@/server/api/errors/app-error";
 import { randomUUID } from "node:crypto";
 
@@ -23,7 +24,8 @@ export function failure(error: unknown): Response {
   if (typeof error === "object" && error !== null && "code" in error) {
     const code = error.code;
     if (code === "P2002" || code === "23505") return Response.json({ error: { code: "CONFLICT", message: "A record with these values already exists." } }, { status: 409 });
-    if (code === "P2025" || code === "23503") return Response.json({ error: { code: "NOT_FOUND", message: "The requested record or reference was not found." } }, { status: 404 });
+    if (code === "P2025") return Response.json({ error: { code: "NOT_FOUND", message: "The requested record was not found." } }, { status: 404 });
+    if (code === "23503") return Response.json({ error: { code: "CONSTRAINT_CONFLICT", message: "The record is referenced by other data and cannot be deleted." } }, { status: 409 });
     if (code === "23514" || code === "22P02") return Response.json({ error: { code: "INVALID_DATA", message: "The request violates a data constraint." } }, { status: 422 });
   }
   const requestId = randomUUID();

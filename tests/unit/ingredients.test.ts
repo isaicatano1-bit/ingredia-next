@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createIngredientSchema } from "../../src/features/ingredients/schemas/ingredient";
+import { createIngredientSchema } from "../../src/server/features/ingredients/schemas/ingredient";
 
 describe("createIngredientSchema", () => {
   it("trims and accepts valid values", () => {

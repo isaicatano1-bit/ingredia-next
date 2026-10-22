@@ -23,6 +23,7 @@ model User {
   passwordHash         String                      @map("password_hash")
   memberships          Membership[]
   provisioningRequests TenantProvisioningRequest[]
+  revokedSessions      RevokedSession[]
   createdAt            DateTime                    @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt            DateTime                    @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
 
@@ -99,5 +100,18 @@ model RateLimitBucket {
 
   @@index([windowStartedAt])
   @@map("rate_limit_buckets")
+  @@schema("public")
+}
+
+model RevokedSession {
+  tokenId   String   @id @map("token_id")
+  userId    String   @map("user_id") @db.Uuid
+  expiresAt DateTime @map("expires_at") @db.Timestamptz(6)
+  revokedAt DateTime @default(now()) @map("revoked_at") @db.Timestamptz(6)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@index([userId])
+  @@map("revoked_sessions")
   @@schema("public")
 }

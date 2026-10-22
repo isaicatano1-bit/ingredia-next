@@ -20,3 +20,12 @@ export async function selectTenant(tenantId: string) {
     method: "POST", body: JSON.stringify({ tenantId }),
   })).data.tenant;
 }
+
+export async function createTenant(name: string, idempotencyKey: string) {
+  return (await apiRequest<{ data: { tenantId: string; schemaName: string } }>("/api/v1/tenants", {
+    method: "POST",
+    headers: { "Idempotency-Key": idempotencyKey },
+    body: JSON.stringify({ name }),
+  })).data;
+}
+

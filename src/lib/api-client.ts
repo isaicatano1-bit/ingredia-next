@@ -22,7 +22,10 @@ export async function apiRequest<T>(
   options: RequestInit & { tenantId?: string } = {},
 ): Promise<T> {
   const headers = new Headers(options.headers);
-  if (options.tenantId) headers.set("x-tenant-id", options.tenantId);
+  const activeTenantId =
+    options.tenantId ??
+    (typeof window !== "undefined" ? localStorage.getItem("ingredia_tenant_id") : null);
+  if (activeTenantId) headers.set("x-tenant-id", activeTenantId);
   if (options.body !== undefined && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
